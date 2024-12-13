@@ -31,9 +31,42 @@ class PPGDataset(Dataset):
 class PPGNet(nn.Module):
     def __init__(self):
         super().__init__()
+        self.C1 = nn.Conv1d(1, 16, kernel_size=5, stride=2, bias=False)
+        self.C1_norm = nn.BatchNorm1d(16)
+
+        self.C2 = nn.Conv1d(16, 32, kernel_size=3, stride=2, bias=False)
+        self.C2_norm = nn.BatchNorm2d(32)
+
+        self.C3 = nn.Conv1d(32, 32, kernel_size=3, stride=2, bias=False)
+        self.C3_norm = nn.BatchNorm2d(32)
+
+        self.C4 = nn.Conv1d(32, 32, kernel_size=3, stride=2, bias=False)
+        self.C4_norm = nn.BatchNorm2d(32)
+
+        self.C5 = nn.Conv1d(32, 32, kernel_size=3, stride=2, bias=False)
+        self.C5_norm = nn.BatchNorm2d(32)
+
+        print(self.C5_norm.shape)
+        self.S6 = nn.AvgPool1d(2)
+        print(self.S6.shape)
+
+        self.L7 = nn.Linear(32, 32)
+
+        self.L8 = nn.Linear(32, 35)
+
+        self.output = nn.Sigmoid()
 
     def forward(self, x):
-        return False
+        y = F.relu(self.C1_norm(self.C1(x)))
+        y = F.relu(self.C2_norm(self.C2(y)))
+        y = F.relu(self.C3_norm(self.C3(y)))
+        y = F.relu(self.C4_norm(self.C4(y)))
+        y = self.C5_norm(self.C5(y))
+        y = self.S6(y)
+        y = y.view(y.size(0), -1)
+        y = self.L7(y)
+        y = self.L8(y)
+        return self.output(y)
 
 if __name__ == "__main__":
     ppg = PPGDataset("data/train8_reformat.xlsx")
