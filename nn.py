@@ -45,6 +45,7 @@ class PPGNet(nn.Module):
 
         self.C5 = nn.Conv1d(32, 32, kernel_size=3, stride=2, bias=False)
         self.C5_norm = nn.BatchNorm1d(32)
+
         #should be size 8
         print(self.C5_norm.shape)
         self.S6 = nn.AvgPool1d(2)
@@ -53,7 +54,7 @@ class PPGNet(nn.Module):
 
         self.L7 = nn.Linear(32*7, 35)
 
-        self.output = nn.Sigmoid()
+        self.output = nn.Softmax()
 
     def forward(self, x):
         y = F.relu(self.C1_norm(self.C1(x)))
