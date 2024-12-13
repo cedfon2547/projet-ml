@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import pandas as pd
 import torch
@@ -12,6 +13,11 @@ from matplotlib import pyplot
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 #########################################
+
+nb_epoch = 10
+learning_rate = 0.01
+momentum = 0.9
+batch_size = 32
 
 class PPGDataset(Dataset):
     def __init__(self, path):
@@ -68,5 +74,37 @@ class PPGNet(nn.Module):
         return torch.argmax(self.output(y))
 
 if __name__ == "__main__":
-    ppg = PPGDataset("data/train8_reformat.xlsx")
-    print(len(ppg))
+    train_set = PPGDataset("data/train8_reformat.xlsx")
+    test_set = PPGDataset("data/test8_reformat.xlsx")
+
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+
+    model = PPGNet()
+    model.to(DEVICE)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
+    model.train()
+
+    for i_epoch in range(nb_epoch):
+
+        start_time, train_losses = time.time(), []
+        for i_batch, batch in enumerate(train_loader):
+            signals, targets = batch
+            targets = targets.type(torch.FloatTensor).unsqueeze(-1)
+
+            signals = signals.to(DEVICE)
+            targets = targets.to(DEVICE)
+            
+            optimizer.zero_grad()
+
+            predictions = model(signals)
+            loss = criterion(predictions, targets)
+
+            loss.backward()
+            optimizer.step()
+            
+            train_losses.append(loss.item())
+
+        print(' [-] epoch {:4}/{:}, train loss {:.6f} in {:.2f}s'.format(
+            i_epoch+1, nb_epoch, np.mean(train_losses), time.time()-start_time))
