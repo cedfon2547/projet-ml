@@ -35,16 +35,16 @@ class PPGNet(nn.Module):
         self.C1_norm = nn.BatchNorm1d(16)
 
         self.C2 = nn.Conv1d(16, 32, kernel_size=3, stride=2, bias=False)
-        self.C2_norm = nn.BatchNorm2d(32)
+        self.C2_norm = nn.BatchNorm1d(32)
 
         self.C3 = nn.Conv1d(32, 32, kernel_size=3, stride=2, bias=False)
-        self.C3_norm = nn.BatchNorm2d(32)
+        self.C3_norm = nn.BatchNorm1d(32)
 
         self.C4 = nn.Conv1d(32, 32, kernel_size=3, stride=2, bias=False)
-        self.C4_norm = nn.BatchNorm2d(32)
+        self.C4_norm = nn.BatchNorm1d(32)
 
         self.C5 = nn.Conv1d(32, 32, kernel_size=3, stride=2, bias=False)
-        self.C5_norm = nn.BatchNorm2d(32)
+        self.C5_norm = nn.BatchNorm1d(32)
 
         print(self.C5_norm.shape)
         self.S6 = nn.AvgPool1d(2)
