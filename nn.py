@@ -64,7 +64,6 @@ class PPGNet(nn.Module):
         y = self.S6(y)
         y = y.view(y.size(0), -1)
         y = self.L7(y)
-        y = self.L8(y)
         return self.output(y)
 
 if __name__ == "__main__":
