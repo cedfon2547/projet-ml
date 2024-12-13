@@ -45,14 +45,13 @@ class PPGNet(nn.Module):
 
         self.C5 = nn.Conv1d(32, 32, kernel_size=3, stride=2, bias=False)
         self.C5_norm = nn.BatchNorm1d(32)
-
+        #should be size 8
         print(self.C5_norm.shape)
         self.S6 = nn.AvgPool1d(2)
         print(self.S6.shape)
+        # out is 7
 
-        self.L7 = nn.Linear(32, 32)
-
-        self.L8 = nn.Linear(32, 35)
+        self.L7 = nn.Linear(32*7, 35)
 
         self.output = nn.Sigmoid()
 
