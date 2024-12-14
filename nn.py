@@ -104,19 +104,22 @@ def train_eval(model, train_set, test_set, epochs=10, lr=0.01, mom=0.9, bs=32, s
         all_targets.append(targets.cpu().numpy())
 
     cmatrix = confusion_matrix(np.concatenate(all_predictions), np.concatenate(all_targets))
-    accuracy = np.trace(cmatrix)/np.sum(cmatrix)
+    global_accuracy = np.trace(cmatrix)/np.sum(cmatrix)
+    individual_accuracies = np.sort(np.diag(cmatrix)/np.sum(cmatrix, axis=0))[::-1]
 
     # results
     if show:
-        print(f"Accuracy: {accuracy:.4f}\n")
+        print(f"Global accuracy: {global_accuracy:.4f}\nIndividual accuracies in descending order:")
+        with np.printoptions(precision=4):
+            print(individual_accuracies.reshape(-1, 7).T)
         plt.figure(figsize=(10, 8))
         sns.heatmap(cmatrix, annot=True, fmt='d')
         plt.xlabel('Predicted labels')
         plt.ylabel('True labels')
-        plt.title('Confusion Matrix for PPGNetv1')
+        plt.title(f'Confusion Matrix for {model.__class__.__name__}')
         plt.show()
 
-    return cmatrix, accuracy
+    return cmatrix, global_accuracy, individual_accuracies
 
 if __name__ == "__main__":
     train_set = PPGDataset("data/train8_reformat.xlsx")
