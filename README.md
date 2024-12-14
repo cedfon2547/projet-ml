@@ -53,10 +53,11 @@ Les caractéristiques principales extraites des signaux PPG comprennent:
 #### 3.4.1 Appentrissage supervisé
 Différents algorithmes d'apprentissage supervisé peuvent être utilisés pour la classification:
 
--  **Machine à vecteurs de support (SVM)**: efficaces pour les données de haute dimension avec des noyaux permettant de séparer les classes.
--  **Forêts aléatoires**: une approche basée sur des ensembles construisant des arbres de décision pour une classification robuste.
--  **k-plus proches voisins (k-NN)**: Une méthode simple pour les petits ensembles de données.
--  **Perceptron multicouche (MLP)**: capturent des motifs complexes dans les données PPG via des transformations non linéaires multiples.
+- **Machine à vecteurs de support (SVM)**: efficaces pour les données de haute dimension avec des noyaux permettant de séparer les classes.
+- **Forêts aléatoires**: une approche basée sur des ensembles construisant des arbres de décision pour une classification robuste.
+- **k-plus proches voisins (k-NN)**: Une méthode simple pour les petits ensembles de données.
+- **Perceptron multicouche (MLP)**: capturent des motifs complexes dans les données PPG via des transformations non linéaires multiples.
+- **Ensembles de modèles**: combinaison de plusieurs modèles pour améliorer la précision de la classification.
 
 #### 3.4.2 Apprentissage non supervisé
 Les algorithmes d'apprentissage non supervisé peuvent être utilisés pour la segmentation et la réduction de dimension:
@@ -81,4 +82,4 @@ Malgré les résultats prometteurs, plusieurs limitations et défis doivent êtr
 -  **Dépendance technologique**: Les dispositifs portables actuels varient en qualité, ce qui affecte la reproduction des résultats. Des études supplémentaires sont nécessaires pour évaluer la robustesse des modèles sur différentes plateformes.
 
 ## 6. Conclusion
-Ce projet montre que les techniques d'apprentissage machine permettent d'exploiter efficacement les données PPG pour l'identification biométrique. En combinant un prétraitement robuste, une extraction de caractéristiques et des algorithmes de classification avancés, des niveaux élevés de précision sont atteintsé. Les résultats suggèrent que les données PPG peuvent être une source prometteuse pour les systèmes biométriques futurs. Cependant, des recherches supplémentaires sont nécessaires pour aborder les limitations et défis actuels.
+Ce projet montre que les techniques d'apprentissage machine permettent d'exploiter efficacement les données PPG pour l'identification biométrique. En combinant un prétraitement robuste, une extraction de caractéristiques et des algorithmes de classification avancés, des niveaux élevés de précision sont atteints. Les résultats suggèrent que les données PPG peuvent être une source prometteuse pour les systèmes biométriques futurs. Cependant, des recherches supplémentaires sont nécessaires pour aborder les limitations et défis actuels.
