@@ -174,20 +174,20 @@ def train_eval(model, train_set, test_set, epochs=10, lr=0.01, mom=0.9, bs=32, s
     return cmatrix, global_accuracy, individual_accuracies
 
 def mean_train_eval(model_name, train_set, test_set, epochs=10, lr=0.01, mom=0.9, bs=32, show=True, n=10):
-    mcm, mga, mia = np.zeros((35,35)), 0, np.zeros(35)
+    mcm, gas, mia = np.zeros((35,35)), [], np.zeros(35)
     for i in range(1, n+1):
         cm, ga, ia = train_eval(model_name(), train_set, test_set, epochs=epochs, lr=lr, mom=mom, bs=bs, show=False)
         mcm += cm
-        mga += ga
+        gas.append(ga)
         mia += ia
         print(f"Round {i} finished.")
     mcm = (mcm/n).astype(int)
-    mga /= n
+    mga = np.mean(gas)
     mia /= n
 
     if show:
         print(f"\n=== Results of {n} rounds of train_eval for model {model_name.__name__}")
-        print(f"Mean global accuracy: {mga:.4f}\nMean individual accuracies in descending order:")
+        print(f"Mean global accuracy: {mga:.4f} ± {np.std(gas):.4f}\nMean individual accuracies in descending order:")
         with np.printoptions(precision=4):
             print(np.sort(mia)[::-1].reshape(-1, 7).T)
         plt.figure(figsize=(10, 8))
