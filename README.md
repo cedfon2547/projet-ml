@@ -31,7 +31,7 @@ Les caractéristiques principales extraites des signaux PPG comprennent:
 -  **Caractéristiques morphologiques**: largeur de l'onde, amplitude, etc.
 
 *Example de caractéristiques pouvant être extraites d'un échantillon PPG*
-<img src="https://www.researchgate.net/publication/361819163/figure/fig3/AS:1175230038966272@1657208084033/Commonly-extracted-features-from-the-PPG-signal-for-BP-estimation-The-figure-displays-a.png" label="PPG features example">
+<img src="./images/ppg_features.png" label="PPG features example">
 
 > https://www.researchgate.net/publication/361819163/figure/fig3/AS:1175230038966272@1657208084033/Commonly-extracted-features-from-the-PPG-signal-for-BP-estimation-The-figure-displays-a.png
 
