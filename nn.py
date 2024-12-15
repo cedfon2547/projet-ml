@@ -5,6 +5,7 @@ import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from jsonschema.exceptions import best_match
 from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import confusion_matrix
 from matplotlib import pyplot as plt
@@ -117,6 +118,11 @@ def train_eval(model, train_set, test_set, epochs=10, lr=0.01, mom=0.9, bs=32, s
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr, momentum=mom)
 
+    test_accuracy_display = []
+    saved_states = []
+    best_accuracy = 0
+    best_epoch = 0
+
     # training
     if show:
         print(f"=== Training {model.__class__.__name__} ===")
@@ -126,7 +132,6 @@ def train_eval(model, train_set, test_set, epochs=10, lr=0.01, mom=0.9, bs=32, s
         for signals, targets in train_loader:
             signals = signals.to(DEVICE)
             targets = targets.to(DEVICE)
-            
             optimizer.zero_grad()
 
             predictions = model(signals)
@@ -134,19 +139,56 @@ def train_eval(model, train_set, test_set, epochs=10, lr=0.01, mom=0.9, bs=32, s
 
             loss.backward()
             optimizer.step()
-            
+
             train_losses.append(loss.item())
+
+            all_predictions, all_targets = [], []
+            for signals_test, targets_test in test_loader:
+                signals_test = signals_test.to(DEVICE)
+                targets_test = targets_test.to(DEVICE)
+                with torch.no_grad():
+                    predictions = torch.argmax(model(signals_test), dim=1)
+                all_predictions.append(predictions.cpu().numpy())
+                all_targets.append(targets_test.cpu().numpy())
+            cmatrix = confusion_matrix(np.concatenate(all_predictions), np.concatenate(all_targets))
+            accuracy = np.trace(cmatrix) / np.sum(cmatrix)
+            test_accuracy_display.append(accuracy)
+
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                best_epoch = i_epoch
+                torch.save({
+                    'epoch': i_epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'loss': loss,
+                }, f'best_nn_layout.pth')
 
         if show:
             print(' [-] epoch {:4}/{:}, train loss {:.6f} in {:.2f}s'.format(
                 i_epoch+1, epochs, np.mean(train_losses), time.time()-start_time))
 
-    # evaluation
+    if show:
+        plt.figure(figsize=(10, 8))
+        plt.plot(test_accuracy_display, label = "test accuracy")
+        # plt.plot(train_loss_display, label = "train loss")
+        plt.xlabel("Epoch")
+        plt.ylabel('Accuracy')
+        plt.title(f'Confusion Matrix for {model.__class__.__name__}')
+        plt.show()
+
     if show:
         print(f"\n=== Evaluating {model.__class__.__name__} ===")
+
+    checkpoint = torch.load(f'best_nn_layout.pth')
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    epoch = checkpoint['epoch']
+    loss = checkpoint['loss']
+
+    # Now you can use the model for testing
     model.eval()
     all_predictions, all_targets = [], []
-
     for signals, targets in test_loader:
         signals = signals.to(DEVICE)
         targets = targets.to(DEVICE)
@@ -205,5 +247,5 @@ if __name__ == "__main__":
 
     # train_eval(PPGNetv1(), train_set, test_set, epochs=1000, bs=300, lr=0.1)
 
-    train_eval(PPGNetv2(), train_set, test_set, epochs=2000, bs=300, lr=0.01)
+    train_eval(PPGNetv2(), train_set, test_set, epochs=5000, bs=300, lr=0.01)
     # mean_train_eval(PPGNetv2, train_set, test_set, epochs=2500, bs=300, lr=0.01, n=10)
