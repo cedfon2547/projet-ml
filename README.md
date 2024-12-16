@@ -1,5 +1,9 @@
 # Identification biométrique à l'aide de données PPG (Photopléthysmographie) et des techniques d'apprentissage machine
 
+## Fichiers principaux
+ - 1_supervised.ipynb: Contient toutes les expériences d'apprentissage supervisé (kNN, SVM, etc.)
+ - nn.py: Contient le code pour l'entraînement et l'évaluation des réseaux de neurones à convolution
+
 ## Résumé
 L'identification biométrique repose sur les caractéristiques physiques ou comportementales uniques d'un individu. La photopléthysmographie (PPG) est une méthode non invasive qui mesure les variations du volume sanguin dans les vaisseaux. Ce projet explore l'utilisation des techniques d'apprentissage machine pour l'identification biométrique à partir des données PPG. Les données sont collectées via des capteurs optiques, permettant d'extraire des caractéristiques distinctives pour chaque individu. Ces caractéristiques servent ensuite d'entrée pour les algorithmes d'apprentissage machine afin de créer un modèle de reconnaissance biométrique. Les résultats démontrent que les techniques d'apprentissage machine peuvent identifier avec succès les individus en utilisant les données PPG.
 
