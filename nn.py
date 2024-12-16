@@ -8,6 +8,8 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import confusion_matrix
 from matplotlib import pyplot as plt
+# from sklearn.preprocessing import MinMaxScaler
+# from scipy.signal import butter, sosfilt
 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -16,9 +18,17 @@ DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 class PPGDataset(Dataset):
     def __init__(self, path):
         super().__init__()
+        # scaler = MinMaxScaler()
+        # sos = butter(3, [0.004, 8], fs=50, btype='band', output='sos')
         self.data, self.targets = [], []
         for _, d in pd.read_excel(path).items():
-            self.data.append([d[1:]])
+            t = np.array(d[1:])
+            # t = scaler.fit_transform(t.reshape(-1,1)).flatten()
+            # t = sosfilt(sos, t)
+            # plt.figure()
+            # plt.plot(np.arange(300), t)
+            # plt.show()
+            self.data.append([t])
             self.targets.append(d[0])
         self.data = np.array(self.data).astype(np.float32)
         self.targets = np.array(self.targets) - 1 # Labels start 1, which is class 0
@@ -109,11 +119,84 @@ class PPGNetv2(nn.Module):
 
         return self.output(self.L10(self.D10(y)))
 
+class PPGNetv3(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.C1 = nn.Conv1d(1, 64, kernel_size=5, stride=3, bias=False)
+        self.N1 = nn.BatchNorm1d(64)
+
+        self.C2 = nn.Conv1d(64, 64, kernel_size=3, stride=2, bias=False)
+        self.N2 = nn.BatchNorm1d(64)
+
+        self.C3 = nn.Conv1d(64, 64, kernel_size=2, stride=2, bias=False)
+        self.N3 = nn.BatchNorm1d(64)
+
+        self.C4 = nn.Conv1d(64, 64, kernel_size=2, stride=2, bias=False)
+        self.N4 = nn.BatchNorm1d(64)
+
+        self.C5 = nn.Conv1d(64, 64, kernel_size=2, stride=2, bias=False)
+        self.N5 = nn.BatchNorm1d(64)
+
+        self.C6 = nn.Conv1d(64, 64, kernel_size=2, stride=2, bias=False)
+        self.N6 = nn.BatchNorm1d(64)
+
+        self.C7 = nn.Conv1d(64, 64, kernel_size=2, stride=2, bias=False)
+        self.N7 = nn.BatchNorm1d(64)
+
+        self.L8 = nn.Linear(64, 16)
+        self.N8 = nn.BatchNorm1d(16)
+
+        self.L9 = nn.Linear(16, 64)
+        self.N9 = nn.BatchNorm1d(64)
+
+        self.L10 = nn.Linear(64, 64)
+        self.N10 = nn.BatchNorm1d(64)
+
+        self.L11 = nn.Linear(64, 64)
+        self.N11 = nn.BatchNorm1d(64)
+
+        self.D12 = nn.Dropout1d(0.1)
+        self.L12 = nn.Linear(64, 35)
+        self.output = nn.Softmax(dim=1)
+
+    def forward(self, x):
+        y = F.relu(self.N1(self.C1(x)))
+        y = F.relu(self.N2(self.C2(y)))
+        y = F.relu(self.N3(self.C3(y)))
+        y = F.relu(self.N4(self.C4(y)))
+        y = F.relu(self.N5(self.C5(y)))
+        y = F.relu(self.N6(self.C6(y)))
+        y = F.relu(self.N7(self.C7(y)))
+        y = y.view(y.size(0), -1)
+        y = F.relu(self.N8(self.L8(y)))
+        y = F.relu(self.N9(self.L9(y)))
+        y = F.relu(self.N10(self.L10(y)))
+        y = F.relu(self.N11(self.L11(y)))
+        return self.output(self.L12(self.D12(y)))
+
+def create_balanced_sampler(dataset):
+    def make_weights_for_balanced_classes(dataset, n_classes):
+        count = [0] * n_classes
+        for _, target in dataset:
+            count[target] += 1
+        weight_per_class = [0.] * n_classes
+        N = float(sum(count))
+        for i in range(n_classes):
+            weight_per_class[i] = N/float(count[i])
+        weight = [0] * len(dataset)
+        for idx, (_, target) in enumerate(dataset):
+            weight[idx] = weight_per_class[target]
+        return weight
+
+    n_classes = np.unique(dataset.targets)
+    weights = make_weights_for_balanced_classes(dataset, len(n_classes))
+    return torch.utils.data.WeightedRandomSampler(weights, len(weights))
+
 def train_eval(model, train_set, test_set, epochs=10, lr=0.01, mom=0.9, bs=32, show=True):
     # preparations
     model.to(DEVICE)
-    train_loader = DataLoader(train_set, batch_size=bs, shuffle=True)
-    test_loader = DataLoader(test_set, batch_size=bs, shuffle=True)
+    train_loader = DataLoader(train_set, batch_size=bs, sampler=create_balanced_sampler(train_set))
+    test_loader = DataLoader(test_set, batch_size=bs, sampler=create_balanced_sampler(test_set))
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr, momentum=mom)
 
@@ -204,6 +287,10 @@ if __name__ == "__main__":
     test_set = PPGDataset("data/test8_reformat.xlsx")
 
     # train_eval(PPGNetv1(), train_set, test_set, epochs=1000, bs=300, lr=0.1)
+    # mean_train_eval(PPGNetv1, train_set, test_set, epochs=1000, bs=300, lr=0.1, n=10)
 
-    train_eval(PPGNetv2(), train_set, test_set, epochs=2000, bs=300, lr=0.01)
+    # train_eval(PPGNetv2(), train_set, test_set, epochs=2500, bs=300, lr=0.01)
     # mean_train_eval(PPGNetv2, train_set, test_set, epochs=2500, bs=300, lr=0.01, n=10)
+
+    train_eval(PPGNetv3(), train_set, test_set, epochs=2500, bs=300, lr=0.01)
+    # mean_train_eval(PPGNetv3, train_set, test_set, epochs=3000, bs=300, lr=0.01, n=10)
