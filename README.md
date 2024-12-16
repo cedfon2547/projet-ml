@@ -18,7 +18,7 @@ Les algorithmes d'apprentissage machine apprennent des motifs à partir de donn�
 Les données PPG sont généralement collectées à l'aide d'appareils portable tels que des montres intelligentes ou des bracelets de fitness. Ces appareils utilisent des capteurs optiques pour mesurer la lumière réfléchie par la peau. Les signaux PPG sont ensuite échantillonnés et stockés pour l'analyse. Un ensemble de données standard inclut des enregistrements capturés dans des conditions contrôlées pour réduire le bruit et les artefacts.
 
 ### 3.2 Prétraitement des données
-Les signaux PPG bruts sont souvent contaminés par des buits dus à des artefacts de mouvement, la lumière ambiante ou les interferences de l'appareil utilisé. Le prétraitement des données est nécessaire pour nettoyer les signaux et extraire les caractéristiques pertinentes. Les étapes de prétraitement incluent:
+Les signaux PPG bruts sont souvent contaminés par des bruits dus à des artefacts de mouvement, la lumière ambiante ou les interferences de l'appareil utilisé. Le prétraitement des données est nécessaire pour nettoyer les signaux et extraire les caractéristiques pertinentes. Les étapes de prétraitement incluent:
 
 -  **Filtrage du signal**: utilisation de filtres passe-bande pour isoler la plage de fréquences d'intérêt (par exemple, 0.5 - 4Hz pour les signaux cardiaques).
 -  **Normalisation**: mise à l'échelle des signaux dans une plage uniforme pour garantir la cohérence.
@@ -69,7 +69,12 @@ Les algorithmes d'apprentissage non supervisé peuvent être utilisés pour la s
 ### 4.1 Ensemble de données
 L'ensemble de données utilisé pour l'expérimentation comprend des signaux PPG collectés auprès de 35 participants. Chaque participant a fourni des enregistrements de PPG dans des conditions contrôlées. Les signaux correspondent à un enregistrement de 6 secondes à une fréquence de 50 Hz, donc à 300 points de données par échantillon.
 
+- Résumé des résultats pour les modèles d'apprentissage supervisé
 <img src="./images/histo_supervised.png" label="Histogramme des classifieurs supervisés">
+
+- Matrice de confusion du meilleur modèle supervisé (stacking)
+<img src="./images/confusion_matrix_supervised.png" label="Matrice de confusion supervisé">
+
 
 ### 4.2 Résultats
 
@@ -80,7 +85,7 @@ Malgré les résultats prometteurs, plusieurs limitations et défis doivent êtr
 
 -  **Sensibilité au bruit**: Les signaux PPG sont sensibles aux artefacts de mouvement, à la lumière ambiante et aux interférences de l'appareil, réduisant la précision dans des environnement qui ne sont pas contrôlés. Des techniques de prétraitement avancées sont nécessaires pour nettoyer les signaux.
 -  **Variabilité interindividuelle**: Les caractéristiques physiologiques peuvent varier considérablement d'un individu à l'autre, nécessitant des modèles robustes pour la généralisation. Les facteurs comme le stress, la température ou l'état physique d'un individu influencent les signaux PPG ce qui complique l'identification.
--  **Scalabilité**: La précision peut diminuer avec un nombre élevé d'individuals dans la base de données. Les algorithmes d'apprentissage machine doivent être conçus pour gérer efficacement de grandes quantités de données.
+-  **Scalabilité**: La précision peut diminuer avec un nombre élevé d'individus dans la base de données. Les algorithmes d'apprentissage machine doivent être conçus pour gérer efficacement de grandes quantités de données.
 -  **Dépendance technologique**: Les dispositifs portables actuels varient en qualité, ce qui affecte la reproduction des résultats. Des études supplémentaires sont nécessaires pour évaluer la robustesse des modèles sur différentes plateformes.
 
 ## 6. Conclusion
