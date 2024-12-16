@@ -1,4 +1,6 @@
 import time
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -8,23 +10,39 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import confusion_matrix
 from matplotlib import pyplot as plt
+from scipy import signal
 # from sklearn.preprocessing import MinMaxScaler
-# from scipy.signal import butter, sosfilt
 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 #########################################
+def load_ppg_raw_data(file_path: str) -> Tuple[np.ndarray, np.ndarray]:
+    df = pd.read_excel(file_path)
+    labels, data = [], []
+    for i in df:
+        labels.append(df[i][0]) # First row is the label
+        data.append(df[i][1:]) # Second row onwards is the data
+    return np.array(labels), np.array(data)
+
+def get_peaks(ppg, fs):
+    return signal.find_peaks(ppg, distance=fs / 2)[0]
+
+def segment_ppg(data, peaks):
+    segments = []
+    for i in range(len(peaks) - 1):
+        segments.append(data[peaks[i]:peaks[i + 1]])
+    return segments
 
 class PPGDataset(Dataset):
     def __init__(self, path):
         super().__init__()
         # scaler = MinMaxScaler()
-        # sos = butter(3, [0.004, 8], fs=50, btype='band', output='sos')
+        # sos = signal.butter(3, [0.004, 8], fs=50, btype='band', output='sos')
         self.data, self.targets = [], []
         for _, d in pd.read_excel(path).items():
             t = np.array(d[1:])
             # t = scaler.fit_transform(t.reshape(-1,1)).flatten()
-            # t = sosfilt(sos, t)
+            # t = signal.sosfilt(sos, t)
             # plt.figure()
             # plt.plot(np.arange(300), t)
             # plt.show()
@@ -32,6 +50,32 @@ class PPGDataset(Dataset):
             self.targets.append(d[0])
         self.data = np.array(self.data).astype(np.float32)
         self.targets = np.array(self.targets) - 1 # Labels start 1, which is class 0
+
+    def __getitem__(self, index):
+        return self.data[index], self.targets[index]
+
+    def __len__(self):
+        return len(self.targets)
+
+class PPGDatasetSegments(Dataset):
+    def __init__(self, path):
+        super().__init__()
+        labels, data = load_ppg_raw_data(path)
+
+        fs = 50  # Sampling frequency
+        segments_list = []
+        segment_labels = []
+
+        for i in range(len(data)):
+            peaks = get_peaks(data[i], fs=fs)
+            segments = segment_ppg(data[i], peaks)
+            segments_list.extend(segments)
+            segment_labels.extend([labels[i]] * len(segments))
+
+        self.data = segments_list
+        self.targets = segment_labels
+        print(len(self.data))
+        print(len(self.targets))
 
     def __getitem__(self, index):
         return self.data[index], self.targets[index]
@@ -200,6 +244,11 @@ def train_eval(model, train_set, test_set, epochs=10, lr=0.01, mom=0.9, bs=32, s
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr, momentum=mom)
 
+    test_accuracy_display = []
+    saved_states = []
+    best_accuracy = 0
+    best_epoch = 0
+
     # training
     if show:
         print(f"=== Training {model.__class__.__name__} ===")
@@ -209,7 +258,6 @@ def train_eval(model, train_set, test_set, epochs=10, lr=0.01, mom=0.9, bs=32, s
         for signals, targets in train_loader:
             signals = signals.to(DEVICE)
             targets = targets.to(DEVICE)
-            
             optimizer.zero_grad()
 
             predictions = model(signals)
@@ -217,19 +265,56 @@ def train_eval(model, train_set, test_set, epochs=10, lr=0.01, mom=0.9, bs=32, s
 
             loss.backward()
             optimizer.step()
-            
+
             train_losses.append(loss.item())
+
+            all_predictions, all_targets = [], []
+            for signals_test, targets_test in test_loader:
+                signals_test = signals_test.to(DEVICE)
+                targets_test = targets_test.to(DEVICE)
+                with torch.no_grad():
+                    predictions = torch.argmax(model(signals_test), dim=1)
+                all_predictions.append(predictions.cpu().numpy())
+                all_targets.append(targets_test.cpu().numpy())
+            cmatrix = confusion_matrix(np.concatenate(all_predictions), np.concatenate(all_targets))
+            accuracy = np.trace(cmatrix) / np.sum(cmatrix)
+            test_accuracy_display.append(accuracy)
+
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                best_epoch = i_epoch
+                torch.save({
+                    'epoch': i_epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'loss': loss,
+                }, 'best_nn_layout.pth')
 
         if show:
             print(' [-] epoch {:4}/{:}, train loss {:.6f} in {:.2f}s'.format(
                 i_epoch+1, epochs, np.mean(train_losses), time.time()-start_time))
 
-    # evaluation
+    if show:
+        plt.figure(figsize=(10, 8))
+        plt.plot(test_accuracy_display, label = "test accuracy")
+        # plt.plot(train_loss_display, label = "train loss")
+        plt.xlabel("Epoch")
+        plt.ylabel('Accuracy')
+        plt.title(f'Confusion Matrix for {model.__class__.__name__}')
+        plt.show()
+
     if show:
         print(f"\n=== Evaluating {model.__class__.__name__} ===")
+
+    checkpoint = torch.load('best_nn_layout.pth')
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    epoch = checkpoint['epoch']
+    loss = checkpoint['loss']
+
+    # evaluation
     model.eval()
     all_predictions, all_targets = [], []
-
     for signals, targets in test_loader:
         signals = signals.to(DEVICE)
         targets = targets.to(DEVICE)
@@ -286,11 +371,16 @@ if __name__ == "__main__":
     train_set = PPGDataset("data/train8_reformat.xlsx")
     test_set = PPGDataset("data/test8_reformat.xlsx")
 
+    train_set_segments = PPGDatasetSegments("data/train8_reformat.xlsx")
+    test_set_segments = PPGDatasetSegments("data/test8_reformat.xlsx")
+
     # train_eval(PPGNetv1(), train_set, test_set, epochs=1000, bs=300, lr=0.1)
     # mean_train_eval(PPGNetv1, train_set, test_set, epochs=1000, bs=300, lr=0.1, n=10)
 
     # train_eval(PPGNetv2(), train_set, test_set, epochs=2500, bs=300, lr=0.01)
+    train_eval(PPGNetv2(), train_set_segments, test_set_segments, epochs=20, bs=300, lr=0.01)
     # mean_train_eval(PPGNetv2, train_set, test_set, epochs=2500, bs=300, lr=0.01, n=10)
 
-    train_eval(PPGNetv3(), train_set, test_set, epochs=2500, bs=300, lr=0.01)
+    # train_eval(PPGNetv3(), train_set, test_set, epochs=2500, bs=300, lr=0.01)
+    # train_eval(PPGNetv3(), train_set_segments, test_set_segments, epochs=2500, bs=300, lr=0.01)
     # mean_train_eval(PPGNetv3, train_set, test_set, epochs=3000, bs=300, lr=0.01, n=10)
