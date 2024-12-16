@@ -49,6 +49,8 @@ Les caractéristiques principales extraites des signaux PPG comprennent:
 12. Systolic area
 13. Diastolic area
 
+<img src="./images/methodologie.png" label="Methodologie">
+
 ### 3.4 Apprentissage machine
 #### 3.4.1 Appentrissage supervisé
 Différents algorithmes d'apprentissage supervisé peuvent être utilisés pour la classification:
@@ -67,7 +69,7 @@ Les algorithmes d'apprentissage non supervisé peuvent être utilisés pour la s
 ### 4.1 Ensemble de données
 L'ensemble de données utilisé pour l'expérimentation comprend des signaux PPG collectés auprès de 35 participants. Chaque participant a fourni des enregistrements de PPG dans des conditions contrôlées. Les signaux correspondent à un enregistrement de 6 secondes à une fréquence de 50 Hz, donc à 300 points de données par échantillon.
 
-**To continue...**
+<img src="./images/histo_supervised.png" label="Histogramme des classifieurs supervisés">
 
 ### 4.2 Résultats
 
