@@ -61,9 +61,10 @@ Différents algorithmes d'apprentissage supervisé peuvent être utilisés pour 
 - **Perceptron multicouche (MLP)**: capturent des motifs complexes dans les données PPG via des transformations non linéaires multiples.
 - **Ensembles de modèles**: combinaison de plusieurs modèles pour améliorer la précision de la classification.
 
-#### 3.4.2 Apprentissage non supervisé
-Les algorithmes d'apprentissage non supervisé peuvent être utilisés pour la segmentation et la réduction de dimension:
--  **To continue...**
+#### 3.4.2 Réseau de neurones à convolution
+Il est aussi possible de sauter l'étape d'extraction de caractéristiques en utilisant un réseau de neurones approprié. Ce réseau doit être capable, dans un premier temps, d'apprendre une représentation efficace du signal PPG, et, dans un deuxième temps, d'utiliser celle-ci pour associer un utilisateur à un segment de signal. Plusieurs architectures ont été testées; la plus efficace est présentée ci-bas. Elle est constituée de 7 couches de neurones à convolution, auxquelles sont ensuite enchaînées 3 couches pleinements connectées et finalement la couche de sortie. Toutes les couches de neurones sont normalisées; leurs fonctions d'activation est la fonction ReLU.
+
+<img src="./images/net2.svg" label="Architecture de PPGNetv2">
 
 ## 4. Résultats expérimentaux
 ### 4.1 Ensemble de données
@@ -75,10 +76,15 @@ L'ensemble de données utilisé pour l'expérimentation comprend des signaux PPG
 - Matrice de confusion du meilleur modèle supervisé (stacking)
 <img src="./images/confusion_matrix_supervised.png" label="Matrice de confusion supervisé">
 
+La méthode employant un réseau de neurones à convolution produit des résultats similaires aux autres modèles, et a une précision de 93.91%. Le réseau prend quelques minutes à être entraîné, dépendemment des ressources disponibles.
+
+- Matrice de confusion du meilleur réseau de neurones à convolution
+<img src="./images/ppgnetv2_cm.png" label="Matrice de confusion de PPGNetv2">
+
 
 ### 4.2 Résultats
 
-Les résultats expérimentaux montrent que les caractéristiques extraites des signaux PPG peuvent être utilisées pour identifier de manière fiable les individus. Les algorithmes d'apprentissage machine supervisés ont obtenu une précision de classification de 95% en moyenne. Les caractéristiques temporelles et fréquentielles se sont révélées être les plus discriminantes pour l'identification biométrique. Les résultats suggèrent que les données PPG peuvent être une source prometteuse pour les systèmes biométriques futurs.
+Les résultats expérimentaux montrent que les caractéristiques extraites des signaux PPG peuvent être utilisées pour identifier de manière fiable les individus. Les algorithmes d'apprentissage machine supervisés ont obtenu une précision de classification de 95% en moyenne. Les caractéristiques temporelles et fréquentielles se sont révélées être les plus discriminantes pour l'identification biométrique. Il a aussi été montré qu'il est possible d'apprendre les caractéristiques via un réseau de neurones à convolution plutôt que de les extraires manuellement. Les résultats suggèrent que les données PPG peuvent être une source prometteuse pour les systèmes biométriques futurs.
 
 ## 5. Limitations et défis
 Malgré les résultats prometteurs, plusieurs limitations et défis doivent être abordés:
