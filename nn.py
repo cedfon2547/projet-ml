@@ -1,4 +1,6 @@
 import time
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -9,10 +11,27 @@ from jsonschema.exceptions import best_match
 from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import confusion_matrix
 from matplotlib import pyplot as plt
+from scipy import signal
 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 #########################################
+def load_ppg_raw_data(file_path: str) -> Tuple[np.ndarray, np.ndarray]:
+    df = pd.read_excel(file_path)
+    labels, data = [], []
+    for i in df:
+        labels.append(df[i][0]) # First row is the label
+        data.append(df[i][1:]) # Second row onwards is the data
+    return np.array(labels), np.array(data)
+
+def get_peaks(ppg, fs):
+    return signal.find_peaks(ppg, distance=fs / 2)[0]
+
+def segment_ppg(data, peaks):
+    segments = []
+    for i in range(len(peaks) - 1):
+        segments.append(data[peaks[i]:peaks[i + 1]])
+    return segments
 
 class PPGDataset(Dataset):
     def __init__(self, path):
@@ -23,6 +42,32 @@ class PPGDataset(Dataset):
             self.targets.append(d[0])
         self.data = np.array(self.data).astype(np.float32)
         self.targets = np.array(self.targets) - 1 # Labels start 1, which is class 0
+
+    def __getitem__(self, index):
+        return self.data[index], self.targets[index]
+
+    def __len__(self):
+        return len(self.targets)
+
+class PPGDatasetSegments(Dataset):
+    def __init__(self, path):
+        super().__init__()
+        labels, data = load_ppg_raw_data(path)
+
+        fs = 50  # Sampling frequency
+        segments_list = []
+        segment_labels = []
+
+        for i in range(len(data)):
+            peaks = get_peaks(data[i], fs=fs)
+            segments = segment_ppg(data[i], peaks)
+            segments_list.extend(segments)
+            segment_labels.extend([labels[i]] * len(segments))
+
+        self.data = segments_list
+        self.targets = segment_labels
+        print(len(self.data))
+        print(len(self.targets))
 
     def __getitem__(self, index):
         return self.data[index], self.targets[index]
@@ -242,10 +287,14 @@ def mean_train_eval(model_name, train_set, test_set, epochs=10, lr=0.01, mom=0.9
     return mcm, mga, mia
 
 if __name__ == "__main__":
-    train_set = PPGDataset("data/train8_reformat.xlsx")
-    test_set = PPGDataset("data/test8_reformat.xlsx")
+    # train_set = PPGDataset("data/train8_reformat.xlsx")
+    # test_set = PPGDataset("data/test8_reformat.xlsx")
+
+    train_set_segments = PPGDatasetSegments("data/train8_reformat.xlsx")
+    test_set_segments = PPGDatasetSegments("data/test8_reformat.xlsx")
 
     # train_eval(PPGNetv1(), train_set, test_set, epochs=1000, bs=300, lr=0.1)
 
-    train_eval(PPGNetv2(), train_set, test_set, epochs=5000, bs=300, lr=0.01)
+    # train_eval(PPGNetv2(), train_set, test_set, epochs=5000, bs=300, lr=0.01)
+    train_eval(PPGNetv2(), train_set_segments, test_set_segments, epochs=20, bs=300, lr=0.01)
     # mean_train_eval(PPGNetv2, train_set, test_set, epochs=2500, bs=300, lr=0.01, n=10)
